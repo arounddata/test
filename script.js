@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 9-7 (исправлена: кнопка Открыть работает)
+ * Версия 9-8 (исправлено редактирование таблицы)
  */
 
 // ============================================================
@@ -416,7 +416,7 @@ function renderEditableTable() {
         const bStr = cubeToStr(fd.cube, n);
         html += `<tr data-index="${i}">
             <td class="fd-number">${i + 1}</td>
-            <td class="fd-tm editable" contenteditable="true">${escapeHtml(tmStr)}<\/td>
+            <td class="fd-tm" data-field="tm" contenteditable="true">${escapeHtml(tmStr)}<\/td>
             <td class="fd-comment">${bStr}<\/td>
         <\/tr>`;
     }
@@ -425,14 +425,27 @@ function renderEditableTable() {
     leftPanel.innerHTML = html;
     
     // Добавляем обработчики для редактируемых ячеек
-    const editableCells = document.querySelectorAll('#leftPanel .editable');
+    const editableCells = document.querySelectorAll('#leftPanel td[contenteditable="true"]');
     editableCells.forEach(cell => {
-        cell.addEventListener('blur', (e) => {
-            const row = cell.closest('tr');
-            const index = parseInt(row.dataset.index);
-            const newTm = cell.innerText.trim();
-            if (newTm && newTm !== appState.originalFds[index].tm) {
-                updateFdAt(index, newTm);
+        let oldValue = cell.innerText.trim();
+        
+        cell.addEventListener('focus', () => {
+            oldValue = cell.innerText.trim();
+        });
+        
+        cell.addEventListener('blur', () => {
+            const newValue = cell.innerText.trim();
+            if (newValue && newValue !== oldValue) {
+                const row = cell.closest('tr');
+                const index = parseInt(row.dataset.index);
+                updateFdAt(index, newValue);
+            }
+        });
+        
+        cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                cell.blur();
             }
         });
     });
@@ -512,7 +525,7 @@ function calculate() {
     const kubList = getCurrentKubList();
     const n = appState.originalN;
     const kc1 = kubList.length;
-    kubList.push(0); // маркер конца
+    kubList.push(0);
     
     document.getElementById('statusBar').textContent = "Вычисление замыкания...";
     console.log("=== CALCULATE START ===");
@@ -629,15 +642,13 @@ function updateUI() {
 
 const fileInput = document.getElementById('fileInput');
 
-// Обработчик выбора файла (один раз)
 fileInput.onchange = (e) => {
     const file = e.target.files[0];
     if (file) loadFromFile(file);
 };
 
-// Кнопка "Открыть"
 document.getElementById('btnOpen').addEventListener('click', () => {
-    fileInput.value = '';  // сбрасываем, чтобы можно было выбрать тот же файл снова
+    fileInput.value = '';
     fileInput.click();
 });
 
@@ -648,7 +659,6 @@ document.getElementById('btnQuit').addEventListener('click', () => {
 });
 document.getElementById('btnAddRow').addEventListener('click', addEmptyFd);
 
-// Горячие клавиши
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'o') {
         e.preventDefault();
@@ -665,6 +675,5 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Инициализация: добавляем одну пустую строку для примера
 appState.originalN = 3;
 addEmptyFd();
