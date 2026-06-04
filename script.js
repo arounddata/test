@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 9-8 (исправлено редактирование таблицы)
+ * Версия 9-9 (пустые окна при запуске)
  */
 
 // ============================================================
@@ -424,7 +424,6 @@ function renderEditableTable() {
     html += '</tbody>\/table>';
     leftPanel.innerHTML = html;
     
-    // Добавляем обработчики для редактируемых ячеек
     const editableCells = document.querySelectorAll('#leftPanel td[contenteditable="true"]');
     editableCells.forEach(cell => {
         let oldValue = cell.innerText.trim();
@@ -675,5 +674,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Инициализация: не добавляем ФЗ автоматически
 appState.originalN = 3;
-addEmptyFd();
+// addEmptyFd();   // ← Убрано!
