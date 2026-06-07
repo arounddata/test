@@ -211,11 +211,6 @@ body {
     font-weight: 500;
 }
 
-.fd-comment {
-    color: #6c757d;
-    font-family: monospace;
-}
-
 .scrollable {
     max-height: 500px;
     overflow-y: auto;
