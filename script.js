@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.3 (исправлена проблема с отображением /table>)
+ * Версия 10.4 (финальная)
  */
 
 // ============================================================
@@ -439,7 +439,7 @@ function renderEditableTable() {
     }
     
     let html = '<table class="fds-table">';
-    html += '<thead><tr><th>№</th><th>ТМ-форма</th><th></th></tr></thead><tbody>';
+    html += '<tbody>';
     
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
@@ -665,7 +665,7 @@ function updateUI() {
         const orderedResult = [...appState.closureResult];
         
         let html = '<table class="fds-table">';
-        html += '<thead><tr><th>№</th><th>ТМ-форма</th></tr></thead><tbody>';
+        html += '<tbody>';
         for (let i = 0; i < orderedResult.length; i++) {
             const cube = orderedResult[i];
             const tmStr = cubeToTm(cube, n);
@@ -715,11 +715,4 @@ document.addEventListener('keydown', (e) => {
         if (!document.getElementById('btnCalculate').disabled) calculate();
     } else if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
-        if (!document.getElementById('btnSaveAs').disabled) saveAsFile();
-    } else if (e.ctrlKey && e.key === 'q') {
-        e.preventDefault();
-        if (confirm("Вы уверены, что хотите выйти?")) window.close();
-    }
-});
-
-updateUI();
+        if (!document.getElementById('btnSaveAs').
