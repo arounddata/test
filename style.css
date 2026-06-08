@@ -112,6 +112,29 @@ body {
     padding: 12px 16px;
     font-weight: 600;
     font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-row-btn-header {
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-row-btn-header:hover {
+    background: #218838;
 }
 
 .panel-content {
@@ -119,28 +142,6 @@ body {
     padding: 16px;
     overflow-y: auto;
     background: #fafbfc;
-}
-
-.panel-footer {
-    padding: 10px 16px;
-    background: #f1f3f5;
-    border-top: 1px solid #e9ecef;
-    text-align: center;
-}
-
-.add-row-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.add-row-btn:hover {
-    background: #218838;
 }
 
 .placeholder {

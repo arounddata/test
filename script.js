@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.1 (динамическое определение N, кнопка удаления)
+ * Версия 10.2 (пустая строка при добавлении, кнопка в заголовке)
  */
 
 // ============================================================
@@ -48,6 +48,7 @@ function krang(val, kubl, l, n, ib, ie) {
 }
 
 function getMaxAttrFromTm(tmStr) {
+    if (!tmStr) return 0;
     const nums = tmStr.split(/[*\-]/).filter(x => x).map(x => parseInt(x, 10));
     return nums.length ? Math.max(...nums) : 0;
 }
@@ -59,18 +60,22 @@ function recalcN() {
     }
     let maxAttr = 0;
     for (const fd of appState.originalFds) {
+        if (!fd.tm) continue;
         const maxInFd = getMaxAttrFromTm(fd.tm);
         if (maxInFd > maxAttr) maxAttr = maxInFd;
     }
-    appState.originalN = maxAttr;
-    // После пересчёта N нужно пересчитать кубы для всех ФЗ
-    for (const fd of appState.originalFds) {
-        fd.cube = tmToCube(fd.tm, appState.originalN);
+    appState.originalN = maxAttr > 0 ? maxAttr : null;
+    if (appState.originalN) {
+        for (const fd of appState.originalFds) {
+            if (fd.tm) {
+                fd.cube = tmToCube(fd.tm, appState.originalN);
+            }
+        }
     }
 }
 
 function tmToCube(tmStr, n) {
-    if (!n) return 0;
+    if (!n || !tmStr) return 0;
     const parts = tmStr.split('-');
     const determinantPart = parts[0];
     const functionPart = parts.length > 1 ? parts[1] : "";
@@ -439,30 +444,44 @@ function renderEditableTable() {
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         const tmStr = fd.tm;
+        const displayValue = tmStr === "" ? "" : escapeHtml(tmStr);
         html += `<tr data-index="${i}">
             <td class="fd-number">${i + 1}<\/td>
-            <td class="fd-tm editable" contenteditable="true">${escapeHtml(tmStr)}<\/td>
-            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button><\/td>
+            <td class="fd-tm editable" contenteditable="true">${displayValue}<\/td>
+            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
         <\/tr>`;
     }
     
     html += '</tbody>\/table>';
     leftPanel.innerHTML = html;
     
-    // Обработчики для редактируемых ячеек
     const editableCells = document.querySelectorAll('#leftPanel .editable');
     editableCells.forEach(cell => {
+        if (cell.innerText.trim() === "") {
+            cell.classList.add('empty-placeholder');
+        }
+        cell.addEventListener('focus', (e) => {
+            if (cell.innerText.trim() === "") {
+                cell.innerText = "";
+                cell.classList.remove('empty-placeholder');
+            }
+        });
         cell.addEventListener('blur', (e) => {
             const row = cell.closest('tr');
             const index = parseInt(row.dataset.index);
-            const newTm = cell.innerText.trim();
-            if (newTm && newTm !== appState.originalFds[index].tm) {
+            let newTm = cell.innerText.trim();
+            if (newTm === "") {
+                deleteFdAt(index);
+                return;
+            }
+            if (newTm !== appState.originalFds[index].tm) {
                 updateFdAt(index, newTm);
+            } else {
+                cell.innerText = appState.originalFds[index].tm;
             }
         });
     });
     
-    // Обработчики для кнопок удаления
     const deleteBtns = document.querySelectorAll('#leftPanel .delete-row-btn');
     deleteBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -483,7 +502,7 @@ function escapeHtml(str) {
 
 function updateFdAt(index, newTm) {
     appState.originalFds[index] = { tm: newTm, cube: 0 };
-    recalcN();  // пересчитываем N и все кубы
+    recalcN();
     appState.originalKc1 = appState.originalFds.length;
     appState.originalKubList = appState.originalFds.map(fd => fd.cube);
     appState.originalKubList.push(0);
@@ -504,9 +523,9 @@ function deleteFdAt(index) {
 }
 
 function addEmptyFd() {
-    const defaultTm = "1-2";
+    const defaultTm = "";
     appState.originalFds.push({ tm: defaultTm, cube: 0 });
-    recalcN();  // пересчитываем N и все кубы
+    recalcN();
     appState.originalKc1 = appState.originalFds.length;
     appState.originalKubList = appState.originalFds.map(fd => fd.cube);
     appState.originalKubList.push(0);
@@ -626,9 +645,6 @@ function updateUI() {
     const attrInfoSpan = document.getElementById('attrInfo');
     const leftPanelHeader = document.getElementById('leftPanelHeader');
     const rightPanelHeader = document.getElementById('rightPanelHeader');
-    
-    leftPanelHeader.textContent = `📋 Исходная система ФЗ`;
-    rightPanelHeader.textContent = `🎯 Замыкание`;
     
     if (appState.originalFds.length > 0) {
         btnCalculate.disabled = false;
