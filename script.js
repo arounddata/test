@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.5 (исправлена синтаксическая ошибка)
+ * Версия 10.6 (исправлено: пустая строка с плейсхолдером)
  */
 
 // ============================================================
@@ -18,7 +18,7 @@ let appState = {
 };
 
 // ============================================================
-// АЛГОРИТМИЧЕСКАЯ ЧАСТЬ
+// АЛГОРИТМИЧЕСКАЯ ЧАСТЬ (без изменений)
 // ============================================================
 
 function krang(val, kubl, l, n, ib, ie) {
@@ -449,7 +449,7 @@ function renderEditableTable() {
             <td class="fd-number">${i + 1}</td>
             <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
             <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
-        </table>`;
+        </tr>`;
     }
     
     html += '</tbody></table>';
@@ -459,6 +459,7 @@ function renderEditableTable() {
     editableCells.forEach(cell => {
         if (cell.innerText.trim() === "") {
             cell.classList.add('empty-placeholder');
+            cell.setAttribute('data-placeholder', 'Введите ФЗ');
         }
         cell.addEventListener('focus', (e) => {
             if (cell.innerText.trim() === "") {
