@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.2 (пустая строка при добавлении, кнопка в заголовке)
+ * Версия 10.3 (исправлена проблема с отображением /table>)
  */
 
 // ============================================================
@@ -9,8 +9,8 @@
 // ============================================================
 let appState = {
     currentFile: null,
-    originalFds: [],      // массив объектов { tm: string, cube: number }
-    originalN: null,      // вычисляется динамически
+    originalFds: [],
+    originalN: null,
     originalKc1: null,
     closureCubes: null,
     closureResult: null,
@@ -439,20 +439,20 @@ function renderEditableTable() {
     }
     
     let html = '<table class="fds-table">';
-    html += '<thead><tr><th>№</th><th>ТМ-форма</th><th></th></thead><tbody>';
+    html += '<thead><tr><th>№</th><th>ТМ-форма</th><th></th></tr></thead><tbody>';
     
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         const tmStr = fd.tm;
         const displayValue = tmStr === "" ? "" : escapeHtml(tmStr);
         html += `<tr data-index="${i}">
-            <td class="fd-number">${i + 1}<\/td>
-            <td class="fd-tm editable" contenteditable="true">${displayValue}<\/td>
-            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
-        <\/tr>`;
+            <td class="fd-number">${i + 1}</td>
+            <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
+            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
+        </tr>`;
     }
     
-    html += '</tbody>\/table>';
+    html += '</tbody></table>';
     leftPanel.innerHTML = html;
     
     const editableCells = document.querySelectorAll('#leftPanel .editable');
@@ -665,7 +665,7 @@ function updateUI() {
         const orderedResult = [...appState.closureResult];
         
         let html = '<table class="fds-table">';
-        html += '<thead><tr><th>№</th><th>ТМ-форма</th></thead><tbody>';
+        html += '<thead><tr><th>№</th><th>ТМ-форма</th></tr></thead><tbody>';
         for (let i = 0; i < orderedResult.length; i++) {
             const cube = orderedResult[i];
             const tmStr = cubeToTm(cube, n);
@@ -722,5 +722,4 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Инициализация: нет данных, ждём действий пользователя
 updateUI();
