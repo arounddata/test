@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.4 (финальная)
+ * Версия 10.5 (исправлена синтаксическая ошибка)
  */
 
 // ============================================================
@@ -449,7 +449,7 @@ function renderEditableTable() {
             <td class="fd-number">${i + 1}</td>
             <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
             <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
-        </tr>`;
+        </table>`;
     }
     
     html += '</tbody></table>';
@@ -715,4 +715,11 @@ document.addEventListener('keydown', (e) => {
         if (!document.getElementById('btnCalculate').disabled) calculate();
     } else if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
-        if (!document.getElementById('btnSaveAs').
+        if (!document.getElementById('btnSaveAs').disabled) saveAsFile();
+    } else if (e.ctrlKey && e.key === 'q') {
+        e.preventDefault();
+        if (confirm("Вы уверены, что хотите выйти?")) window.close();
+    }
+});
+
+updateUI();
