@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10 (только ТМ-форма в таблицах, битовая форма в XML)
+ * Версия 10.1 (динамическое определение N, кнопка удаления)
  */
 
 // ============================================================
@@ -10,7 +10,7 @@
 let appState = {
     currentFile: null,
     originalFds: [],      // массив объектов { tm: string, cube: number }
-    originalN: 3,         // значение по умолчанию
+    originalN: null,      // вычисляется динамически
     originalKc1: null,
     closureCubes: null,
     closureResult: null,
@@ -47,7 +47,30 @@ function krang(val, kubl, l, n, ib, ie) {
     return { val, kubl, k0, k1, k2, k3 };
 }
 
+function getMaxAttrFromTm(tmStr) {
+    const nums = tmStr.split(/[*\-]/).filter(x => x).map(x => parseInt(x, 10));
+    return nums.length ? Math.max(...nums) : 0;
+}
+
+function recalcN() {
+    if (appState.originalFds.length === 0) {
+        appState.originalN = null;
+        return;
+    }
+    let maxAttr = 0;
+    for (const fd of appState.originalFds) {
+        const maxInFd = getMaxAttrFromTm(fd.tm);
+        if (maxInFd > maxAttr) maxAttr = maxInFd;
+    }
+    appState.originalN = maxAttr;
+    // После пересчёта N нужно пересчитать кубы для всех ФЗ
+    for (const fd of appState.originalFds) {
+        fd.cube = tmToCube(fd.tm, appState.originalN);
+    }
+}
+
 function tmToCube(tmStr, n) {
+    if (!n) return 0;
     const parts = tmStr.split('-');
     const determinantPart = parts[0];
     const functionPart = parts.length > 1 ? parts[1] : "";
@@ -82,6 +105,7 @@ function tmToCube(tmStr, n) {
 }
 
 function cubeToStr(cubeValue, n) {
+    if (!n) return "";
     const parts = [];
     for (let i = 0; i < n; i++) {
         const digit = (cubeValue >> (i * 2)) & 3;
@@ -94,6 +118,7 @@ function cubeToStr(cubeValue, n) {
 }
 
 function cubeToTm(cubeValue, n) {
+    if (!n) return "";
     const determinants = [];
     const functions = [];
     for (let i = 0; i < n; i++) {
@@ -106,6 +131,7 @@ function cubeToTm(cubeValue, n) {
 }
 
 function kimpl1(kubList, n, kc1) {
+    if (!n) return { kub: [], ic: 0 };
     console.log("kimpl1 started", { n, kc1, kubListLength: kubList.length });
     const g = n * 2;
     let kub = kubList.slice(0, kc1);
@@ -358,6 +384,7 @@ async function parseXmlFile(file) {
 }
 
 function writeXmlResult(originalKubList, originalKc1, kubResult, ic, n) {
+    if (!n) return "";
     const originalSet = new Set(originalKubList.slice(0, originalKc1));
     const orderedOriginal = [];
     for (let i = 0; i < originalKc1; i++) {
@@ -400,7 +427,6 @@ function writeXmlResult(originalKubList, originalKc1, kubResult, ic, n) {
 
 function renderEditableTable() {
     const leftPanel = document.getElementById('leftPanel');
-    const n = appState.originalN;
     
     if (appState.originalFds.length === 0) {
         leftPanel.innerHTML = '<div class="placeholder">Нет данных. Добавьте ФЗ или откройте файл.</div>';
@@ -408,20 +434,22 @@ function renderEditableTable() {
     }
     
     let html = '<table class="fds-table">';
-    html += '<thead><tr><th>№</th><th>ТМ-форма</th></thead><tbody>';
+    html += '<thead><tr><th>№</th><th>ТМ-форма</th><th></th></thead><tbody>';
     
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         const tmStr = fd.tm;
         html += `<tr data-index="${i}">
-            <td class="fd-number">${i + 1}</td>
+            <td class="fd-number">${i + 1}<\/td>
             <td class="fd-tm editable" contenteditable="true">${escapeHtml(tmStr)}<\/td>
+            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button><\/td>
         <\/tr>`;
     }
     
-    html += '</tbody></table>';
+    html += '</tbody>\/table>';
     leftPanel.innerHTML = html;
     
+    // Обработчики для редактируемых ячеек
     const editableCells = document.querySelectorAll('#leftPanel .editable');
     editableCells.forEach(cell => {
         cell.addEventListener('blur', (e) => {
@@ -431,6 +459,15 @@ function renderEditableTable() {
             if (newTm && newTm !== appState.originalFds[index].tm) {
                 updateFdAt(index, newTm);
             }
+        });
+    });
+    
+    // Обработчики для кнопок удаления
+    const deleteBtns = document.querySelectorAll('#leftPanel .delete-row-btn');
+    deleteBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const index = parseInt(btn.dataset.index);
+            deleteFdAt(index);
         });
     });
 }
@@ -445,27 +482,31 @@ function escapeHtml(str) {
 }
 
 function updateFdAt(index, newTm) {
-    const n = appState.originalN;
-    try {
-        const newCube = tmToCube(newTm, n);
-        appState.originalFds[index] = { tm: newTm, cube: newCube };
-        appState.originalKc1 = appState.originalFds.length;
-        appState.originalKubList = appState.originalFds.map(fd => fd.cube);
-        appState.originalKubList.push(0);
-        appState.resultSaved = false;
-        appState.closureResult = null;
-        updateUI();
-    } catch (e) {
-        alert(`Ошибка в формате ФЗ: ${newTm}\n${e.message}`);
-        renderEditableTable();
-    }
+    appState.originalFds[index] = { tm: newTm, cube: 0 };
+    recalcN();  // пересчитываем N и все кубы
+    appState.originalKc1 = appState.originalFds.length;
+    appState.originalKubList = appState.originalFds.map(fd => fd.cube);
+    appState.originalKubList.push(0);
+    appState.resultSaved = false;
+    appState.closureResult = null;
+    updateUI();
+}
+
+function deleteFdAt(index) {
+    appState.originalFds.splice(index, 1);
+    recalcN();
+    appState.originalKc1 = appState.originalFds.length;
+    appState.originalKubList = appState.originalFds.map(fd => fd.cube);
+    if (appState.originalKubList.length > 0) appState.originalKubList.push(0);
+    appState.resultSaved = false;
+    appState.closureResult = null;
+    updateUI();
 }
 
 function addEmptyFd() {
-    const n = appState.originalN;
     const defaultTm = "1-2";
-    const newCube = tmToCube(defaultTm, n);
-    appState.originalFds.push({ tm: defaultTm, cube: newCube });
+    appState.originalFds.push({ tm: defaultTm, cube: 0 });
+    recalcN();  // пересчитываем N и все кубы
     appState.originalKc1 = appState.originalFds.length;
     appState.originalKubList = appState.originalFds.map(fd => fd.cube);
     appState.originalKubList.push(0);
@@ -505,6 +546,10 @@ function calculate() {
         alert("Нет данных для расчёта. Добавьте ФЗ или откройте файл.");
         return;
     }
+    if (!appState.originalN) {
+        alert("Не удалось определить количество атрибутов. Проверьте правильность введённых ФЗ.");
+        return;
+    }
     
     const kubList = getCurrentKubList();
     const n = appState.originalN;
@@ -537,6 +582,10 @@ function calculate() {
 async function saveAsFile() {
     if (!appState.closureCubes) {
         alert("Нет результатов для сохранения. Сначала выполните расчёт.");
+        return;
+    }
+    if (!appState.originalN) {
+        alert("Не определён размер атрибутов.");
         return;
     }
     
@@ -584,7 +633,7 @@ function updateUI() {
     if (appState.originalFds.length > 0) {
         btnCalculate.disabled = false;
         fileInfoSpan.textContent = `Файл: ${appState.currentFile?.name || 'ручной ввод'}`;
-        attrInfoSpan.textContent = `Количество атрибутов: ${appState.originalN}`;
+        attrInfoSpan.textContent = `Количество атрибутов: ${appState.originalN !== null ? appState.originalN : '?'}`;
         renderEditableTable();
     } else {
         btnCalculate.disabled = true;
@@ -594,7 +643,7 @@ function updateUI() {
         document.getElementById('leftPanel').innerHTML = '<div class="placeholder">Нет данных. Добавьте ФЗ или откройте файл.</div>';
     }
     
-    if (appState.closureResult && appState.closureResult.length > 0) {
+    if (appState.closureResult && appState.closureResult.length > 0 && appState.originalN) {
         btnSaveAs.disabled = false;
         const n = appState.originalN;
         const orderedResult = [...appState.closureResult];
@@ -609,7 +658,7 @@ function updateUI() {
                 <td class="fd-tm">${tmStr}</td>
             </tr>`;
         }
-        html += '</tbody></tr>';
+        html += '</tbody></table>';
         rightPanel.innerHTML = html;
     } else {
         btnSaveAs.disabled = true;
@@ -657,6 +706,5 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Инициализация: добавляем одну пустую строку для примера
-appState.originalN = 3;
-addEmptyFd();
+// Инициализация: нет данных, ждём действий пользователя
+updateUI();
