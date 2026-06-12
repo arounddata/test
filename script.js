@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.6 (исправлено: пустая строка с плейсхолдером)
+ * Версия 10.6 (с кнопкой Проверить)
  */
 
 // ============================================================
@@ -9,8 +9,8 @@
 // ============================================================
 let appState = {
     currentFile: null,
-    originalFds: [],
-    originalN: null,
+    originalFds: [],      // массив объектов { tm: string, cube: number }
+    originalN: null,      // вычисляется динамически
     originalKc1: null,
     closureCubes: null,
     closureResult: null,
@@ -18,7 +18,7 @@ let appState = {
 };
 
 // ============================================================
-// АЛГОРИТМИЧЕСКАЯ ЧАСТЬ (без изменений)
+// АЛГОРИТМИЧЕСКАЯ ЧАСТЬ
 // ============================================================
 
 function krang(val, kubl, l, n, ib, ie) {
@@ -697,6 +697,10 @@ fileInput.onchange = (e) => {
 document.getElementById('btnOpen').addEventListener('click', () => {
     fileInput.value = '';
     fileInput.click();
+});
+
+document.getElementById('btnCheck').addEventListener('click', () => {
+    console.log("Проверка (пока без действий)");
 });
 
 document.getElementById('btnCalculate').addEventListener('click', calculate);
