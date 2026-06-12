@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.6 (с кнопкой Проверить)
+ * Версия 10.7 (без битовой формы в комментариях XML)
  */
 
 // ============================================================
@@ -109,19 +109,6 @@ function tmToCube(tmStr, n) {
     return value;
 }
 
-function cubeToStr(cubeValue, n) {
-    if (!n) return "";
-    const parts = [];
-    for (let i = 0; i < n; i++) {
-        const digit = (cubeValue >> (i * 2)) & 3;
-        if (digit === 1) parts.push("01");
-        else if (digit === 2) parts.push("10");
-        else if (digit === 3) parts.push("11");
-        else parts.push("00");
-    }
-    return parts.join(".");
-}
-
 function cubeToTm(cubeValue, n) {
     if (!n) return "";
     const determinants = [];
@@ -213,7 +200,6 @@ function kimpl1(kubList, n, kc1) {
                             cz2.push(r);
                         }
                         changed = true;
-                        console.log("  New cube added:", cubeToStr(r, n));
                     }
                 }
             }
@@ -406,8 +392,7 @@ function writeXmlResult(originalKubList, originalKc1, kubResult, ic, n) {
     for (let idx = 0; idx < originalKc1; idx++) {
         const cubeValue = originalKubList[idx];
         const tmStr = cubeToTm(cubeValue, n);
-        const bStr = cubeToStr(cubeValue, n);
-        lines.push(`    <fd${idx + 1}>${tmStr}</fd${idx + 1}>   <!-- ${bStr} -->`);
+        lines.push(`    <fd${idx + 1}>${tmStr}</fd${idx + 1}>`);
     }
     
     lines.push('</fdsi>');
@@ -416,8 +401,7 @@ function writeXmlResult(originalKubList, originalKc1, kubResult, ic, n) {
     for (let idx = 0; idx < orderedResult.length; idx++) {
         const cubeValue = orderedResult[idx];
         const tmStr = cubeToTm(cubeValue, n);
-        const bStr = cubeToStr(cubeValue, n);
-        lines.push(`    <fd${idx + 1}>${tmStr}</fd${idx + 1}>   <!-- ${bStr} -->`);
+        lines.push(`    <fd${idx + 1}>${tmStr}</fd${idx + 1}>`);
     }
     
     lines.push('</fdsc>');
