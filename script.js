@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.8 (исправлено отображение таблицы в левой панели)
+ * Версия 11.9 (при добавлении ФЗ очищаются центральная и правая панели)
  */
 
-const APP_VERSION = "11.8";
+const APP_VERSION = "11.9";
 
 // ============================================================
 // Хранилище данных
@@ -360,7 +360,7 @@ function renderEditableTable() {
             <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
         <\/tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody>赶时间';
     leftPanel.innerHTML = html;
     
     document.querySelectorAll('#leftPanel .editable').forEach(cell => {
@@ -414,7 +414,7 @@ function renderCenterPanel() {
             <td class="fd-tm">${escapeHtml(fd.tm)}<\/td>
         <\/tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody>赶时间';
     centerPanel.innerHTML = html;
     document.getElementById('attrInfo').textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -433,7 +433,7 @@ function renderClosureTable() {
             <td class="fd-tm">${escapeHtml(appState.closureCform[i])}<\/td>
         <\/tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody>赶时间';
     rightPanel.innerHTML = html;
 }
 
@@ -446,7 +446,14 @@ function updateFdAt(index, newTm) {
     appState.isDataValid = false;
     appState.numericFds = null;
     appState.numericN = null;
+    appState.closureResult = null;
     appState.closureCform = null;
+    // Очищаем центральную и правую панели
+    document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
+    document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
+    document.getElementById('attrInfo').textContent = 'Количество атрибутов: —';
+    document.getElementById('btnCalculate').disabled = true;
+    document.getElementById('btnSaveAs').disabled = true;
     updateUI();
 }
 
@@ -455,7 +462,14 @@ function deleteFdAt(index) {
     appState.isDataValid = false;
     appState.numericFds = null;
     appState.numericN = null;
+    appState.closureResult = null;
     appState.closureCform = null;
+    // Очищаем центральную и правую панели
+    document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
+    document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
+    document.getElementById('attrInfo').textContent = 'Количество атрибутов: —';
+    document.getElementById('btnCalculate').disabled = true;
+    document.getElementById('btnSaveAs').disabled = true;
     updateUI();
 }
 
@@ -464,7 +478,14 @@ function addEmptyFd() {
     appState.isDataValid = false;
     appState.numericFds = null;
     appState.numericN = null;
+    appState.closureResult = null;
     appState.closureCform = null;
+    // Очищаем центральную и правую панели
+    document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
+    document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
+    document.getElementById('attrInfo').textContent = 'Количество атрибутов: —';
+    document.getElementById('btnCalculate').disabled = true;
+    document.getElementById('btnSaveAs').disabled = true;
     updateUI();
 }
 
@@ -483,6 +504,8 @@ function clearAllPanels() {
     document.getElementById('statusBar').textContent = "Готов. Откройте файл или введите ФЗ вручную.";
     document.getElementById('fileInfo').textContent = "Файл: не загружен";
     document.getElementById('attrInfo').textContent = "Количество атрибутов: —";
+    document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
+    document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
 }
 
 function checkData() {
@@ -513,6 +536,9 @@ function checkData() {
     renderCenterPanel();
     document.getElementById('statusBar').textContent = `Проверка выполнена. Найдено атрибутов: ${appState.numericN}`;
     document.getElementById('btnCalculate').disabled = false;
+    // Очищаем правую панель при новой проверке
+    document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
+    document.getElementById('btnSaveAs').disabled = true;
 }
 
 function calculate() {
