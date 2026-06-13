@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.13 (исправлены иероглифы в таблицах)
+ * Версия 11.14 (с кнопкой Справка и модальным окном)
  */
 
-const APP_VERSION = "11.13";
+const APP_VERSION = "11.14";
 
 // ============================================================
 // Хранилище данных
@@ -670,6 +670,42 @@ async function saveAsFile() {
     }
 }
 
+// ============================================================
+// СПРАВКА (МОДАЛЬНОЕ ОКНО)
+// ============================================================
+
+async function loadHelp() {
+    const helpModal = document.getElementById('helpModal');
+    const helpContent = document.getElementById('helpContent');
+    
+    helpModal.style.display = 'flex';
+    helpContent.innerHTML = '<p>Загрузка справки...</p>';
+    
+    try {
+        const response = await fetch('README.md');
+        if (!response.ok) {
+            throw new Error('Файл справки не найден');
+        }
+        const markdown = await response.text();
+        if (typeof marked !== 'undefined') {
+            helpContent.innerHTML = marked.parse(markdown);
+        } else {
+            helpContent.innerHTML = `<pre>${escapeHtml(markdown)}</pre>`;
+        }
+    } catch (err) {
+        helpContent.innerHTML = `<p style="color: red;">Ошибка загрузки справки: ${err.message}</p>
+        <p>Убедитесь, что файл README.md находится в той же папке, что и index.html.</p>`;
+    }
+}
+
+function closeHelpModal() {
+    document.getElementById('helpModal').style.display = 'none';
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА
+// ============================================================
+
 function updateUI() {
     const btnCheck = document.getElementById('btnCheck');
     const btnCalculate = document.getElementById('btnCalculate');
@@ -705,10 +741,6 @@ function updateUI() {
     }
 }
 
-// ============================================================
-// ИНИЦИАЛИЗАЦИЯ
-// ============================================================
-
 const fileInput = document.getElementById('fileInput');
 fileInput.onchange = (e) => {
     const file = e.target.files[0];
@@ -724,11 +756,20 @@ document.getElementById('btnAddRow').addEventListener('click', addEmptyFd);
 document.getElementById('btnCheck').addEventListener('click', checkData);
 document.getElementById('btnCalculate').addEventListener('click', calculate);
 document.getElementById('btnSaveAs').addEventListener('click', saveAsFile);
+document.getElementById('btnHelp').addEventListener('click', loadHelp);
+document.querySelector('.close-modal').addEventListener('click', closeHelpModal);
+document.getElementById('helpModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('helpModal')) {
+        closeHelpModal();
+    }
+});
 
+// Горячие клавиши
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'o') { e.preventDefault(); document.getElementById('btnOpen').click(); }
     else if (e.ctrlKey && e.key === 'r') { e.preventDefault(); if (!document.getElementById('btnCalculate').disabled) calculate(); }
     else if (e.ctrlKey && e.shiftKey && e.key === 'S') { e.preventDefault(); if (!document.getElementById('btnSaveAs').disabled) saveAsFile(); }
+    else if (e.key === 'F1') { e.preventDefault(); loadHelp(); }
 });
 
 updateUI();
