@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.5
+ * Версия 11.6
  */
 
-const APP_VERSION = "11.5";
+const APP_VERSION = "11.6";
 
 // ============================================================
 // Хранилище данных
@@ -635,7 +635,8 @@ function updateUI() {
     const fileInfoSpan = document.getElementById('fileInfo');
     const versionSpan = document.getElementById('versionInfo');
     
-    versionSpan.textContent = `Версия: ${APP_VERSION}`;
+    // Устанавливаем версию
+    if (versionSpan) versionSpan.textContent = `Версия: ${APP_VERSION}`;
     
     if (appState.originalFds.length > 0) {
         btnCheck.disabled = false;
