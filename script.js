@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.2 (с-форма на всех панелях, упрощённая загрузка файлов)
+ * Версия 11.3 (очистка панелей при открытии, убрана кнопка Выход)
  */
 
 // ============================================================
@@ -410,7 +410,6 @@ function renderCenterPanel() {
         return;
     }
     
-    // Отображаем с-форму (оригинальные введённые данные)
     let html = '<table class="fds-table">';
     html += '<tbody>';
     
@@ -426,7 +425,6 @@ function renderCenterPanel() {
     html += '</tbody></table>';
     centerPanel.innerHTML = html;
     
-    // Обновляем информационную панель
     const attrInfoSpan = document.getElementById('attrInfo');
     attrInfoSpan.textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -450,7 +448,7 @@ function renderClosureTable() {
         </tr>`;
     }
     
-    html += '</tbody><table>';
+    html += '</tbody></table>';
     rightPanel.innerHTML = html;
 }
 
@@ -497,6 +495,24 @@ function addEmptyFd() {
     updateUI();
 }
 
+function clearAllPanels() {
+    // Очищаем левую панель
+    appState.originalFds = [];
+    // Очищаем центральную панель
+    appState.isDataValid = false;
+    appState.numericFds = null;
+    appState.numericN = null;
+    appState.attrMap = null;
+    appState.attrMapReverse = null;
+    // Очищаем правую панель
+    appState.closureResult = null;
+    appState.closureCform = null;
+    appState.resultSaved = true;
+    appState.currentFile = null;
+    
+    updateUI();
+}
+
 // ============================================================
 // ПРОВЕРКА (конвертация с-форма → ч-форма внутренне)
 // ============================================================
@@ -507,21 +523,18 @@ function checkData() {
         return;
     }
     
-    // Проверяем, что все строки не пустые
     const hasEmpty = appState.originalFds.some(fd => !fd.tm || fd.tm.trim() === "");
     if (hasEmpty) {
         alert("Есть пустые строки. Заполните или удалите их.");
         return;
     }
     
-    // Собираем уникальные атрибуты
     const uniqueAttrs = getUniqueAttributes(appState.originalFds);
     if (uniqueAttrs.length === 0) {
         alert("Не удалось определить атрибуты. Проверьте правильность введённых ФЗ.");
         return;
     }
     
-    // Создаём отображения для внутреннего использования
     appState.attrMap = new Map();
     appState.attrMapReverse = new Map();
     uniqueAttrs.forEach((attr, idx) => {
@@ -529,20 +542,16 @@ function checkData() {
         appState.attrMapReverse.set(idx + 1, attr);
     });
     
-    // Конвертируем ФЗ в числовую форму (внутренне)
     appState.numericFds = convertFdsListToNumeric(appState.originalFds, appState.attrMap);
     appState.numericN = uniqueAttrs.length;
     appState.isDataValid = true;
     
-    // Очищаем предыдущие результаты
     appState.closureResult = null;
     appState.closureCform = null;
     
-    // Отображаем в центральной панели (с-форма)
     renderCenterPanel();
     document.getElementById('statusBar').textContent = `Проверка выполнена. Найдено атрибутов: ${appState.numericN}`;
     
-    // Включаем кнопку "Рассчитать"
     const btnCalculate = document.getElementById('btnCalculate');
     btnCalculate.disabled = false;
 }
@@ -569,12 +578,11 @@ function calculate() {
     const n = appState.numericN;
     const kc1 = numericTmList.length;
     
-    // Преобразуем ч-форму в кубы (числа)
     const kubList = [];
     for (const tmStr of numericTmList) {
         kubList.push(tmToCube(tmStr, n));
     }
-    kubList.push(0); // маркер конца
+    kubList.push(0);
     
     document.getElementById('statusBar').textContent = "Вычисление замыкания...";
     console.log("=== CALCULATE START ===");
@@ -587,7 +595,6 @@ function calculate() {
             const { kub, ic } = kimpl1(kubList, n, kc1);
             console.log("Result from kimpl1:", { kub, ic });
             
-            // Преобразуем кубы обратно в ч-форму
             const closureNumeric = [];
             for (let i = 0; i < ic; i++) {
                 const cube = kub[i];
@@ -597,7 +604,6 @@ function calculate() {
             
             appState.closureResult = closureNumeric;
             
-            // Конвертируем ч-форму в с-форму
             appState.closureCform = [];
             for (const numericTm of closureNumeric) {
                 const cform = numericToCform(numericTm, appState.attrMapReverse);
@@ -608,7 +614,6 @@ function calculate() {
             renderClosureTable();
             document.getElementById('statusBar').textContent = `Вычисление завершено. Всего ФЗ: ${ic}`;
             
-            // Включаем кнопку "Сохранить"
             const btnSaveAs = document.getElementById('btnSaveAs');
             btnSaveAs.disabled = false;
         } catch (err) {
@@ -624,7 +629,6 @@ function updateUI() {
     const btnCalculate = document.getElementById('btnCalculate');
     const btnSaveAs = document.getElementById('btnSaveAs');
     const fileInfoSpan = document.getElementById('fileInfo');
-    const leftPanelHeader = document.getElementById('leftPanelHeader');
     
     if (appState.originalFds.length > 0) {
         btnCheck.disabled = false;
@@ -690,130 +694,6 @@ async function parseXmlFile(file) {
             try {
                 const xmlString = e.target.result;
                 
-                // Ищем все теги <fd...>...</fd...> (любые, с любым содержимым после fd)
                 const fdRegex = /<fd[^>]*>([^<]*)<\/fd[^>]*>/gi;
                 const tmStrings = [];
-                let match;
-                while ((match = fdRegex.exec(xmlString)) !== null) {
-                    const tmStr = match[1].trim();
-                    if (tmStr) {
-                        tmStrings.push(tmStr);
-                    }
-                }
-                
-                if (tmStrings.length === 0) {
-                    reject(new Error("Не найдено ни одной ФЗ (нет тегов <fd...>)"));
-                    return;
-                }
-                
-                resolve({ fdsList: tmStrings.map(tm => ({ tm })) });
-            } catch (err) {
-                reject(err);
-            }
-        };
-        reader.onerror = () => reject(new Error("Ошибка чтения файла"));
-        reader.readAsText(file);
-    });
-}
-
-function loadFromFile(file) {
-    parseXmlFile(file).then(({ fdsList }) => {
-        appState.currentFile = file;
-        appState.originalFds = fdsList;
-        appState.isDataValid = false;
-        appState.numericFds = null;
-        appState.attrMap = null;
-        appState.attrMapReverse = null;
-        appState.numericN = null;
-        appState.closureResult = null;
-        appState.closureCform = null;
-        appState.resultSaved = true;
-        updateUI();
-        document.getElementById('statusBar').textContent = `Файл загружен: ${file.name}`;
-        
-        // Автоматически проверяем загруженные данные
-        setTimeout(() => checkData(), 100);
-    }).catch(err => {
-        alert("Ошибка загрузки файла: " + err.message);
-    });
-}
-
-async function saveAsFile() {
-    if (!appState.closureCform || appState.closureCform.length === 0) {
-        alert("Нет результатов для сохранения. Сначала выполните расчёт.");
-        return;
-    }
-    if (!appState.originalFds) {
-        alert("Нет исходных данных.");
-        return;
-    }
-    
-    const originalCformList = appState.originalFds.map(fd => fd.tm);
-    const xmlContent = writeXmlResult(originalCformList, appState.closureCform, appState.closureCform.length);
-    
-    const blob = new Blob([xmlContent], { type: 'application/xml' });
-    
-    try {
-        const handle = await window.showSaveFilePicker({
-            suggestedName: appState.currentFile ? appState.currentFile.name : 'fds.xml',
-            types: [{
-                description: 'XML files',
-                accept: { 'application/xml': ['.xml'] }
-            }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        appState.resultSaved = true;
-        updateUI();
-        document.getElementById('statusBar').textContent = `Сохранено в: ${handle.name}`;
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            console.error("Save error:", err);
-            alert("Ошибка при сохранении: " + err.message);
-        }
-    }
-}
-
-// ============================================================
-// ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА
-// ============================================================
-
-const fileInput = document.getElementById('fileInput');
-
-fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (file) loadFromFile(file);
-};
-
-document.getElementById('btnOpen').addEventListener('click', () => {
-    fileInput.value = '';
-    fileInput.click();
-});
-
-document.getElementById('btnCheck').addEventListener('click', checkData);
-document.getElementById('btnCalculate').addEventListener('click', calculate);
-document.getElementById('btnSaveAs').addEventListener('click', saveAsFile);
-document.getElementById('btnQuit').addEventListener('click', () => {
-    if (confirm("Вы уверены, что хотите выйти?")) window.close();
-});
-document.getElementById('btnAddRow').addEventListener('click', addEmptyFd);
-
-// Горячие клавиши
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'o') {
-        e.preventDefault();
-        document.getElementById('btnOpen').click();
-    } else if (e.ctrlKey && e.key === 'r') {
-        e.preventDefault();
-        if (!document.getElementById('btnCalculate').disabled) calculate();
-    } else if (e.ctrlKey && e.shiftKey && e.key === 'S') {
-        e.preventDefault();
-        if (!document.getElementById('btnSaveAs').disabled) saveAsFile();
-    } else if (e.ctrlKey && e.key === 'q') {
-        e.preventDefault();
-        if (confirm("Вы уверены, что хотите выйти?")) window.close();
-    }
-});
-
-updateUI();
+                let match
