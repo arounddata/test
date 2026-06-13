@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.7 (при загрузке файла удаляется <fdsc>)
+ * Версия 11.8 (исправлено отображение таблицы в левой панели)
  */
 
-const APP_VERSION = "11.7";
+const APP_VERSION = "11.8";
 
 // ============================================================
 // Хранилище данных
@@ -348,16 +348,17 @@ function renderEditableTable() {
         leftPanel.innerHTML = '<div class="placeholder">Нет данных. Добавьте ФЗ или откройте файл.</div>';
         return;
     }
-    let html = '<table class="fds-table"><tbody>';
+    let html = '<table class="fds-table">';
+    html += '<tbody>';
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         const tmStr = fd.tm;
         const displayValue = tmStr === "" ? "" : escapeHtml(tmStr);
         html += `<tr data-index="${i}">
-            <td class="fd-number">${i + 1}</td>
-            <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
-            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
-        </table>`;
+            <td class="fd-number">${i + 1}<\/td>
+            <td class="fd-tm editable" contenteditable="true">${displayValue}<\/td>
+            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
+        <\/tr>`;
     }
     html += '</tbody></table>';
     leftPanel.innerHTML = html;
@@ -403,13 +404,17 @@ function renderCenterPanel() {
         centerPanel.innerHTML = '<div class="placeholder">Нажмите «Проверить» для проверки данных.</div>';
         return;
     }
-    let html = '<table class="fds-table"><tbody>';
+    let html = '<table class="fds-table">';
+    html += '<tbody>';
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         if (!fd.tm) continue;
-        html += `<tr><td class="fd-number">${i + 1}</td><td class="fd-tm">${escapeHtml(fd.tm)}</td></tr>`;
+        html += `<tr>
+            <td class="fd-number">${i + 1}<\/td>
+            <td class="fd-tm">${escapeHtml(fd.tm)}<\/td>
+        <\/tr>`;
     }
-    html += '</tbody>赶时间';
+    html += '</tbody></table>';
     centerPanel.innerHTML = html;
     document.getElementById('attrInfo').textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -420,11 +425,15 @@ function renderClosureTable() {
         rightPanel.innerHTML = '<div class="placeholder">Нет результатов. Нажмите «Рассчитать».</div>';
         return;
     }
-    let html = '<table class="fds-table"><tbody>';
+    let html = '<table class="fds-table">';
+    html += '<tbody>';
     for (let i = 0; i < appState.closureCform.length; i++) {
-        html += `<tr><td class="fd-number">${i + 1}</td><td class="fd-tm">${escapeHtml(appState.closureCform[i])}</td></tr>`;
+        html += `<tr>
+            <td class="fd-number">${i + 1}<\/td>
+            <td class="fd-tm">${escapeHtml(appState.closureCform[i])}<\/td>
+        <\/tr>`;
     }
-    html += '</tbody>赶时间';
+    html += '</tbody></table>';
     rightPanel.innerHTML = html;
 }
 
