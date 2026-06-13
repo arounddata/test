@@ -1,7 +1,7 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 10.7 (без битовой формы в комментариях XML)
+ * Версия 10.8 (три панели: Исходные данные, Исходная система ФЗ, Замыкание)
  */
 
 // ============================================================
@@ -625,6 +625,8 @@ async function saveAsFile() {
 function updateUI() {
     const btnCalculate = document.getElementById('btnCalculate');
     const btnSaveAs = document.getElementById('btnSaveAs');
+    const leftPanel = document.getElementById('leftPanel');
+    const centerPanel = document.getElementById('centerPanel');
     const rightPanel = document.getElementById('rightPanel');
     const fileInfoSpan = document.getElementById('fileInfo');
     const attrInfoSpan = document.getElementById('attrInfo');
@@ -641,8 +643,11 @@ function updateUI() {
         btnSaveAs.disabled = true;
         fileInfoSpan.textContent = 'Файл: не загружен';
         attrInfoSpan.textContent = 'Количество атрибутов: —';
-        document.getElementById('leftPanel').innerHTML = '<div class="placeholder">Нет данных. Добавьте ФЗ или откройте файл.</div>';
+        leftPanel.innerHTML = '<div class="placeholder">Нет данных. Добавьте ФЗ или откройте файл.</div>';
     }
+    
+    // Центральная панель пока пустая
+    centerPanel.innerHTML = '<div class="placeholder">(пока пусто)</div>';
     
     if (appState.closureResult && appState.closureResult.length > 0 && appState.originalN) {
         btnSaveAs.disabled = false;
