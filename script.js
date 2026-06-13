@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.10 (исправлено отображение таблиц)
+ * Версия 11.13 (исправлены иероглифы в таблицах)
  */
 
-const APP_VERSION = "11.10";
+const APP_VERSION = "11.13";
 
 // ============================================================
 // Хранилище данных
@@ -360,7 +360,7 @@ function renderEditableTable() {
             <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
         <\/tr>`;
     }
-    html += '</tbody>赶时间';
+    html += '<\/tbody><\/table>';
     leftPanel.innerHTML = html;
     
     document.querySelectorAll('#leftPanel .editable').forEach(cell => {
@@ -414,7 +414,7 @@ function renderCenterPanel() {
             <td class="fd-tm">${escapeHtml(fd.tm)}<\/td>
         <\/tr>`;
     }
-    html += '</tbody>赶时间';
+    html += '<\/tbody><\/table>';
     centerPanel.innerHTML = html;
     document.getElementById('attrInfo').textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -433,7 +433,7 @@ function renderClosureTable() {
             <td class="fd-tm">${escapeHtml(appState.closureCform[i])}<\/td>
         <\/tr>`;
     }
-    html += '</tbody>赶时间';
+    html += '<\/tbody><\/table>';
     rightPanel.innerHTML = html;
 }
 
