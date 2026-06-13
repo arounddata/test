@@ -448,7 +448,7 @@ function renderClosureTable() {
         </tr>`;
     }
     
-    html += '</tbody></table>';
+    html += '</tbody></tr>';
     rightPanel.innerHTML = html;
 }
 
@@ -496,21 +496,19 @@ function addEmptyFd() {
 }
 
 function clearAllPanels() {
-    // Очищаем левую панель
+    appState.currentFile = null;
     appState.originalFds = [];
-    // Очищаем центральную панель
     appState.isDataValid = false;
     appState.numericFds = null;
     appState.numericN = null;
     appState.attrMap = null;
     appState.attrMapReverse = null;
-    // Очищаем правую панель
     appState.closureResult = null;
     appState.closureCform = null;
     appState.resultSaved = true;
-    appState.currentFile = null;
-    
     updateUI();
+    document.getElementById('statusBar').textContent = "Готов. Откройте файл или введите ФЗ вручную.";
+    document.getElementById('fileInfo').textContent = "Файл: не загружен";
 }
 
 // ============================================================
@@ -696,4 +694,115 @@ async function parseXmlFile(file) {
                 
                 const fdRegex = /<fd[^>]*>([^<]*)<\/fd[^>]*>/gi;
                 const tmStrings = [];
-                let match
+                let match;
+                while ((match = fdRegex.exec(xmlString)) !== null) {
+                    const tmStr = match[1].trim();
+                    if (tmStr) {
+                        tmStrings.push(tmStr);
+                    }
+                }
+                
+                if (tmStrings.length === 0) {
+                    reject(new Error("Не найдено ни одной ФЗ (нет тегов <fd...>)"));
+                    return;
+                }
+                
+                resolve({ fdsList: tmStrings.map(tm => ({ tm })) });
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+        reader.readAsText(file);
+    });
+}
+
+function loadFromFile(file) {
+    parseXmlFile(file).then(({ fdsList }) => {
+        clearAllPanels();
+        appState.currentFile = file;
+        appState.originalFds = fdsList;
+        updateUI();
+        document.getElementById('statusBar').textContent = `Файл загружен: ${file.name}`;
+        document.getElementById('fileInfo').textContent = `Файл: ${file.name}`;
+        
+        setTimeout(() => checkData(), 100);
+    }).catch(err => {
+        alert("Ошибка загрузки файла: " + err.message);
+    });
+}
+
+async function saveAsFile() {
+    if (!appState.closureCform || appState.closureCform.length === 0) {
+        alert("Нет результатов для сохранения. Сначала выполните расчёт.");
+        return;
+    }
+    if (!appState.originalFds) {
+        alert("Нет исходных данных.");
+        return;
+    }
+    
+    const originalCformList = appState.originalFds.map(fd => fd.tm);
+    const xmlContent = writeXmlResult(originalCformList, appState.closureCform, appState.closureCform.length);
+    
+    const blob = new Blob([xmlContent], { type: 'application/xml' });
+    
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: appState.currentFile ? appState.currentFile.name : 'fds.xml',
+            types: [{
+                description: 'XML files',
+                accept: { 'application/xml': ['.xml'] }
+            }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        appState.resultSaved = true;
+        updateUI();
+        document.getElementById('statusBar').textContent = `Сохранено в: ${handle.name}`;
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error("Save error:", err);
+            alert("Ошибка при сохранении: " + err.message);
+        }
+    }
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА
+// ============================================================
+
+const fileInput = document.getElementById('fileInput');
+
+fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) loadFromFile(file);
+};
+
+document.getElementById('btnOpen').addEventListener('click', () => {
+    clearAllPanels();
+    fileInput.value = '';
+    fileInput.click();
+});
+
+document.getElementById('btnCheck').addEventListener('click', checkData);
+document.getElementById('btnCalculate').addEventListener('click', calculate);
+document.getElementById('btnSaveAs').addEventListener('click', saveAsFile);
+document.getElementById('btnAddRow').addEventListener('click', addEmptyFd);
+
+// Горячие клавиши
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'o') {
+        e.preventDefault();
+        document.getElementById('btnOpen').click();
+    } else if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        if (!document.getElementById('btnCalculate').disabled) calculate();
+    } else if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        if (!document.getElementById('btnSaveAs').disabled) saveAsFile();
+    }
+});
+
+updateUI();
