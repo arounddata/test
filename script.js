@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.6
+ * Версия 11.7 (при загрузке файла удаляется <fdsc>)
  */
 
-const APP_VERSION = "11.6";
+const APP_VERSION = "11.7";
 
 // ============================================================
 // Хранилище данных
@@ -357,7 +357,7 @@ function renderEditableTable() {
             <td class="fd-number">${i + 1}</td>
             <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
             <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
-        </tr>`;
+        </table>`;
     }
     html += '</tbody></table>';
     leftPanel.innerHTML = html;
@@ -409,7 +409,7 @@ function renderCenterPanel() {
         if (!fd.tm) continue;
         html += `<tr><td class="fd-number">${i + 1}</td><td class="fd-tm">${escapeHtml(fd.tm)}</td></tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody>赶时间';
     centerPanel.innerHTML = html;
     document.getElementById('attrInfo').textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -424,7 +424,7 @@ function renderClosureTable() {
     for (let i = 0; i < appState.closureCform.length; i++) {
         html += `<tr><td class="fd-number">${i + 1}</td><td class="fd-tm">${escapeHtml(appState.closureCform[i])}</td></tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody>赶时间';
     rightPanel.innerHTML = html;
 }
 
@@ -569,20 +569,34 @@ async function parseXmlFile(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const xmlString = e.target.result;
+                let xmlString = e.target.result;
+                
+                // Удаляем все блоки <fdsc>...</fdsc> (включая содержимое)
+                xmlString = xmlString.replace(/<fdsc\b[^>]*>[\s\S]*?<\/fdsc>/gi, '');
+                // Удаляем комментарии FDS Closure
+                xmlString = xmlString.replace(/<!--\s*FDS Closure\s*-->/gi, '');
+                // Убираем лишние пустые строки
+                xmlString = xmlString.replace(/\n\s*\n/g, '\n');
+                
                 const fdRegex = /<fd[^>]*>([^<]*)<\/fd[^>]*>/gi;
                 const tmStrings = [];
                 let match;
                 while ((match = fdRegex.exec(xmlString)) !== null) {
                     const tmStr = match[1].trim();
-                    if (tmStr) tmStrings.push(tmStr);
+                    if (tmStr) {
+                        tmStrings.push(tmStr);
+                    }
                 }
+                
                 if (tmStrings.length === 0) {
                     reject(new Error("Не найдено ни одной ФЗ (нет тегов <fd...>)"));
                     return;
                 }
+                
                 resolve({ fdsList: tmStrings.map(tm => ({ tm })) });
-            } catch (err) { reject(err); }
+            } catch (err) {
+                reject(err);
+            }
         };
         reader.onerror = () => reject(new Error("Ошибка чтения файла"));
         reader.readAsText(file);
@@ -635,7 +649,6 @@ function updateUI() {
     const fileInfoSpan = document.getElementById('fileInfo');
     const versionSpan = document.getElementById('versionInfo');
     
-    // Устанавливаем версию
     if (versionSpan) versionSpan.textContent = `Версия: ${APP_VERSION}`;
     
     if (appState.originalFds.length > 0) {
