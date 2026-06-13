@@ -1,8 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.4 (исправлена работа кнопок Открыть и +)
+ * Версия 11.5
  */
+
+const APP_VERSION = "11.5";
 
 // ============================================================
 // Хранилище данных
@@ -100,7 +102,6 @@ function cubeToTm(cubeValue, n) {
 
 function kimpl1(kubList, n, kc1) {
     if (!n) return { kub: [], ic: 0 };
-    console.log("kimpl1 started", { n, kc1, kubListLength: kubList.length });
     const g = n * 2;
     let kub = kubList.slice(0, kc1);
     let ic = kc1;
@@ -118,7 +119,6 @@ function kimpl1(kubList, n, kc1) {
     let iteration = 0;
     while (swout) {
         iteration++;
-        console.log(`Iteration ${iteration}, ic=${ic}, ir=${ir}, k2=${k2}, k3=${k3}`);
         let changed = false;
         const ik1 = ic - 1;
         const ih1 = k3;
@@ -184,7 +184,6 @@ function kimpl1(kubList, n, kc1) {
         swi = 0;
         if (!changed) {
             swout = 0;
-            console.log("No changes, exiting");
             break;
         }
         
@@ -273,7 +272,6 @@ function kimpl1(kubList, n, kc1) {
         }
     }
     
-    console.log("kimpl1 finished, ic:", ic);
     return { kub, ic };
 }
 
@@ -356,12 +354,12 @@ function renderEditableTable() {
         const tmStr = fd.tm;
         const displayValue = tmStr === "" ? "" : escapeHtml(tmStr);
         html += `<tr data-index="${i}">
-            <td class="fd-number">${i + 1}<\/td>
-            <td class="fd-tm editable" contenteditable="true">${displayValue}<\/td>
-            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
-        <\/tr>`;
+            <td class="fd-number">${i + 1}</td>
+            <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
+            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
+        </tr>`;
     }
-    html += '</tbody>\/table>';
+    html += '</tbody></table>';
     leftPanel.innerHTML = html;
     
     document.querySelectorAll('#leftPanel .editable').forEach(cell => {
@@ -409,9 +407,9 @@ function renderCenterPanel() {
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         if (!fd.tm) continue;
-        html += `<tr><td class="fd-number">${i + 1}<\/td><td class="fd-tm">${escapeHtml(fd.tm)}<\/td><\/tr>`;
+        html += `<tr><td class="fd-number">${i + 1}</td><td class="fd-tm">${escapeHtml(fd.tm)}</td></tr>`;
     }
-    html += '</tbody>\/table>';
+    html += '</tbody></table>';
     centerPanel.innerHTML = html;
     document.getElementById('attrInfo').textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -424,9 +422,9 @@ function renderClosureTable() {
     }
     let html = '<table class="fds-table"><tbody>';
     for (let i = 0; i < appState.closureCform.length; i++) {
-        html += `<tr><td class="fd-number">${i + 1}<\/td><td class="fd-tm">${escapeHtml(appState.closureCform[i])}<\/td><\/tr>`;
+        html += `<tr><td class="fd-number">${i + 1}</td><td class="fd-tm">${escapeHtml(appState.closureCform[i])}</td></tr>`;
     }
-    html += '</tbody>\/table>';
+    html += '</tbody></table>';
     rightPanel.innerHTML = html;
 }
 
@@ -635,6 +633,10 @@ function updateUI() {
     const btnCalculate = document.getElementById('btnCalculate');
     const btnSaveAs = document.getElementById('btnSaveAs');
     const fileInfoSpan = document.getElementById('fileInfo');
+    const versionSpan = document.getElementById('versionInfo');
+    
+    versionSpan.textContent = `Версия: ${APP_VERSION}`;
+    
     if (appState.originalFds.length > 0) {
         btnCheck.disabled = false;
         fileInfoSpan.textContent = `Файл: ${appState.currentFile?.name || 'ручной ввод'}`;
