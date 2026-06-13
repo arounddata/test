@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.9 (при добавлении ФЗ очищаются центральная и правая панели)
+ * Версия 11.10 (исправлено отображение таблиц)
  */
 
-const APP_VERSION = "11.9";
+const APP_VERSION = "11.10";
 
 // ============================================================
 // Хранилище данных
@@ -448,7 +448,6 @@ function updateFdAt(index, newTm) {
     appState.numericN = null;
     appState.closureResult = null;
     appState.closureCform = null;
-    // Очищаем центральную и правую панели
     document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
     document.getElementById('attrInfo').textContent = 'Количество атрибутов: —';
@@ -464,7 +463,6 @@ function deleteFdAt(index) {
     appState.numericN = null;
     appState.closureResult = null;
     appState.closureCform = null;
-    // Очищаем центральную и правую панели
     document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
     document.getElementById('attrInfo').textContent = 'Количество атрибутов: —';
@@ -480,7 +478,6 @@ function addEmptyFd() {
     appState.numericN = null;
     appState.closureResult = null;
     appState.closureCform = null;
-    // Очищаем центральную и правую панели
     document.getElementById('centerPanel').innerHTML = '<div class="placeholder">Нажмите «Проверить» после ввода данных.</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
     document.getElementById('attrInfo').textContent = 'Количество атрибутов: —';
@@ -536,7 +533,6 @@ function checkData() {
     renderCenterPanel();
     document.getElementById('statusBar').textContent = `Проверка выполнена. Найдено атрибутов: ${appState.numericN}`;
     document.getElementById('btnCalculate').disabled = false;
-    // Очищаем правую панель при новой проверке
     document.getElementById('rightPanel').innerHTML = '<div class="placeholder">Нет результатов</div>';
     document.getElementById('btnSaveAs').disabled = true;
 }
@@ -606,11 +602,8 @@ async function parseXmlFile(file) {
             try {
                 let xmlString = e.target.result;
                 
-                // Удаляем все блоки <fdsc>...</fdsc> (включая содержимое)
                 xmlString = xmlString.replace(/<fdsc\b[^>]*>[\s\S]*?<\/fdsc>/gi, '');
-                // Удаляем комментарии FDS Closure
                 xmlString = xmlString.replace(/<!--\s*FDS Closure\s*-->/gi, '');
-                // Убираем лишние пустые строки
                 xmlString = xmlString.replace(/\n\s*\n/g, '\n');
                 
                 const fdRegex = /<fd[^>]*>([^<]*)<\/fd[^>]*>/gi;
