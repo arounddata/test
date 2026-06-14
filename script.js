@@ -1,17 +1,18 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.15 (без автоматической проверки после загрузки файла)
+ * Версия 11.16 (составная форма на вводе, каноническая для расчёта и вывода)
  */
 
-const APP_VERSION = "11.15";
+const APP_VERSION = "11.16";
 
 // ============================================================
 // Хранилище данных
 // ============================================================
 let appState = {
     currentFile: null,
-    originalFds: [],
+    originalFds: [],           // исходные ФЗ (составная форма, как ввёл пользователь)
+    canonicalFds: [],          // каноническая форма (для расчёта)
     attrMap: null,
     attrMapReverse: null,
     numericFds: [],
@@ -288,6 +289,20 @@ function parseCFormToTokens(cform) {
     return { determinants, functions };
 }
 
+function expandToCanonical(fdsList) {
+    // Преобразует список ФЗ из составной формы в каноническую
+    const canonical = [];
+    for (const fd of fdsList) {
+        if (!fd.tm) continue;
+        const { determinants, functions } = parseCFormToTokens(fd.tm);
+        const detStr = determinants.join('*');
+        for (const func of functions) {
+            canonical.push({ tm: `${detStr}-${func}` });
+        }
+    }
+    return canonical;
+}
+
 function getUniqueAttributes(fdsList) {
     const attrs = new Set();
     for (const fd of fdsList) {
@@ -366,7 +381,7 @@ function renderEditableTable() {
     document.querySelectorAll('#leftPanel .editable').forEach(cell => {
         if (cell.innerText.trim() === "") {
             cell.classList.add('empty-placeholder');
-            cell.setAttribute('data-placeholder', 'Введите ФЗ (A-B, A*B-C)');
+            cell.setAttribute('data-placeholder', 'Введите ФЗ (A-B-C, A*B-C)');
         }
         cell.addEventListener('focus', () => {
             if (cell.innerText.trim() === "") {
@@ -404,6 +419,7 @@ function renderCenterPanel() {
         centerPanel.innerHTML = '<div class="placeholder">Нажмите «Проверить» для проверки данных.</div>';
         return;
     }
+    // Отображаем исходные ФЗ в том виде, как их ввёл пользователь (составная форма)
     let html = '<table class="fds-table">';
     html += '<tbody>';
     for (let i = 0; i < appState.originalFds.length; i++) {
@@ -425,6 +441,7 @@ function renderClosureTable() {
         rightPanel.innerHTML = '<div class="placeholder">Нет результатов. Нажмите «Рассчитать».</div>';
         return;
     }
+    // Выводим результат в канонической форме
     let html = '<table class="fds-table">';
     html += '<tbody>';
     for (let i = 0; i < appState.closureCform.length; i++) {
@@ -444,6 +461,7 @@ function renderClosureTable() {
 function updateFdAt(index, newTm) {
     appState.originalFds[index] = { tm: newTm };
     appState.isDataValid = false;
+    appState.canonicalFds = null;
     appState.numericFds = null;
     appState.numericN = null;
     appState.closureResult = null;
@@ -459,6 +477,7 @@ function updateFdAt(index, newTm) {
 function deleteFdAt(index) {
     appState.originalFds.splice(index, 1);
     appState.isDataValid = false;
+    appState.canonicalFds = null;
     appState.numericFds = null;
     appState.numericN = null;
     appState.closureResult = null;
@@ -474,6 +493,7 @@ function deleteFdAt(index) {
 function addEmptyFd() {
     appState.originalFds.push({ tm: "" });
     appState.isDataValid = false;
+    appState.canonicalFds = null;
     appState.numericFds = null;
     appState.numericN = null;
     appState.closureResult = null;
@@ -489,6 +509,7 @@ function addEmptyFd() {
 function clearAllPanels() {
     appState.currentFile = null;
     appState.originalFds = [];
+    appState.canonicalFds = null;
     appState.attrMap = null;
     appState.attrMapReverse = null;
     appState.numericFds = null;
@@ -515,21 +536,34 @@ function checkData() {
         alert("Есть пустые строки. Заполните или удалите их.");
         return;
     }
-    const uniqueAttrs = getUniqueAttributes(appState.originalFds);
+    
+    // Преобразуем в каноническую форму для внутреннего использования
+    const canonicalFds = expandToCanonical(appState.originalFds);
+    if (canonicalFds.length === 0) {
+        alert("Не удалось преобразовать ФЗ в каноническую форму.");
+        return;
+    }
+    
+    // Собираем уникальные атрибуты из канонической формы
+    const uniqueAttrs = getUniqueAttributes(canonicalFds);
     if (uniqueAttrs.length === 0) {
         alert("Не удалось определить атрибуты. Проверьте правильность введённых ФЗ.");
         return;
     }
+    
     appState.attrMap = new Map();
     appState.attrMapReverse = new Map();
     uniqueAttrs.forEach((attr, idx) => {
         appState.attrMap.set(attr, idx + 1);
         appState.attrMapReverse.set(idx + 1, attr);
     });
-    appState.numericFds = convertFdsListToNumeric(appState.originalFds, appState.attrMap);
+    
+    appState.canonicalFds = canonicalFds;
+    appState.numericFds = convertFdsListToNumeric(canonicalFds, appState.attrMap);
     appState.numericN = uniqueAttrs.length;
     appState.isDataValid = true;
     appState.closureCform = null;
+    
     renderCenterPanel();
     document.getElementById('statusBar').textContent = `Проверка выполнена. Найдено атрибутов: ${appState.numericN}`;
     document.getElementById('btnCalculate').disabled = false;
@@ -550,11 +584,13 @@ function calculate() {
         alert("Не удалось определить количество атрибутов.");
         return;
     }
+    
     const numericTmList = appState.numericFds.map(fd => fd.tm);
     const n = appState.numericN;
     const kc1 = numericTmList.length;
     const kubList = numericTmList.map(tm => tmToCube(tm, n));
     kubList.push(0);
+    
     document.getElementById('statusBar').textContent = "Вычисление замыкания...";
     setTimeout(() => {
         try {
@@ -565,6 +601,7 @@ function calculate() {
                 if (tmStr) closureNumeric.push(tmStr);
             }
             appState.closureResult = closureNumeric;
+            // Результат в канонической форме
             appState.closureCform = closureNumeric.map(num => numericToCform(num, appState.attrMapReverse)).filter(c => c);
             appState.resultSaved = false;
             renderClosureTable();
@@ -637,13 +674,13 @@ function loadFromFile(file) {
         appState.currentFile = file;
         appState.originalFds = fdsList;
         appState.isDataValid = false;
+        appState.canonicalFds = null;
         appState.numericFds = null;
         appState.numericN = null;
         appState.closureCform = null;
         updateUI();
         document.getElementById('statusBar').textContent = `Файл загружен: ${file.name}. Нажмите «Проверить» для продолжения.`;
         document.getElementById('fileInfo').textContent = `Файл: ${file.name}`;
-        // НЕТ АВТОМАТИЧЕСКОЙ ПРОВЕРКИ
     }).catch(err => alert("Ошибка загрузки файла: " + err.message));
 }
 
