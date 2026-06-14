@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.14 (с кнопкой Справка и модальным окном)
+ * Версия 11.15 (без автоматической проверки после загрузки файла)
  */
 
-const APP_VERSION = "11.14";
+const APP_VERSION = "11.15";
 
 // ============================================================
 // Хранилище данных
@@ -636,10 +636,14 @@ function loadFromFile(file) {
         clearAllPanels();
         appState.currentFile = file;
         appState.originalFds = fdsList;
+        appState.isDataValid = false;
+        appState.numericFds = null;
+        appState.numericN = null;
+        appState.closureCform = null;
         updateUI();
-        document.getElementById('statusBar').textContent = `Файл загружен: ${file.name}`;
+        document.getElementById('statusBar').textContent = `Файл загружен: ${file.name}. Нажмите «Проверить» для продолжения.`;
         document.getElementById('fileInfo').textContent = `Файл: ${file.name}`;
-        setTimeout(() => checkData(), 100);
+        // НЕТ АВТОМАТИЧЕСКОЙ ПРОВЕРКИ
     }).catch(err => alert("Ошибка загрузки файла: " + err.message));
 }
 
