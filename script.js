@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.16 (составная форма на вводе, каноническая для расчёта и вывода)
+ * Версия 11.17 (исправлен parseCFormToTokens для составных форм)
  */
 
-const APP_VERSION = "11.16";
+const APP_VERSION = "11.17";
 
 // ============================================================
 // Хранилище данных
@@ -283,7 +283,8 @@ function kimpl1(kubList, n, kc1) {
 function parseCFormToTokens(cform) {
     const parts = cform.split('-');
     const determinantPart = parts[0];
-    const functionPart = parts.length > 1 ? parts[1] : "";
+    // Все остальные части после первого дефиса — функции (через дефис)
+    const functionPart = parts.slice(1).join('-');
     const determinants = determinantPart.split('*');
     const functions = functionPart ? functionPart.split('-') : [];
     return { determinants, functions };
