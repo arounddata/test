@@ -294,3 +294,25 @@ body {
     border-radius: 8px;
     overflow-x: auto;
 }
+
+/* Кнопки навигации в справке */
+.help-nav-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    background: #f0f2f5;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.help-nav-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.help-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

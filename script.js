@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.17 (исправлен parseCFormToTokens для составных форм)
+ * Версия 11.18 (многостраничная справка с пагинацией по ##)
  */
 
-const APP_VERSION = "11.17";
+const APP_VERSION = "11.18";
 
 // ============================================================
 // Хранилище данных
@@ -283,7 +283,6 @@ function kimpl1(kubList, n, kc1) {
 function parseCFormToTokens(cform) {
     const parts = cform.split('-');
     const determinantPart = parts[0];
-    // Все остальные части после первого дефиса — функции (через дефис)
     const functionPart = parts.slice(1).join('-');
     const determinants = determinantPart.split('*');
     const functions = functionPart ? functionPart.split('-') : [];
@@ -291,7 +290,6 @@ function parseCFormToTokens(cform) {
 }
 
 function expandToCanonical(fdsList) {
-    // Преобразует список ФЗ из составной формы в каноническую
     const canonical = [];
     for (const fd of fdsList) {
         if (!fd.tm) continue;
@@ -371,12 +369,12 @@ function renderEditableTable() {
         const tmStr = fd.tm;
         const displayValue = tmStr === "" ? "" : escapeHtml(tmStr);
         html += `<tr data-index="${i}">
-            <td class="fd-number">${i + 1}<\/td>
-            <td class="fd-tm editable" contenteditable="true">${displayValue}<\/td>
-            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️<\/button><\/td>
-        <\/tr>`;
+            <td class="fd-number">${i + 1}</td>
+            <td class="fd-tm editable" contenteditable="true">${displayValue}</td>
+            <td class="fd-action"><button class="delete-row-btn" data-index="${i}">🗑️</button></td>
+        </tr>`;
     }
-    html += '<\/tbody><\/table>';
+    html += '</tbody></table>';
     leftPanel.innerHTML = html;
     
     document.querySelectorAll('#leftPanel .editable').forEach(cell => {
@@ -420,18 +418,17 @@ function renderCenterPanel() {
         centerPanel.innerHTML = '<div class="placeholder">Нажмите «Проверить» для проверки данных.</div>';
         return;
     }
-    // Отображаем исходные ФЗ в том виде, как их ввёл пользователь (составная форма)
     let html = '<table class="fds-table">';
     html += '<tbody>';
     for (let i = 0; i < appState.originalFds.length; i++) {
         const fd = appState.originalFds[i];
         if (!fd.tm) continue;
         html += `<tr>
-            <td class="fd-number">${i + 1}<\/td>
-            <td class="fd-tm">${escapeHtml(fd.tm)}<\/td>
-        <\/tr>`;
+            <td class="fd-number">${i + 1}</td>
+            <td class="fd-tm">${escapeHtml(fd.tm)}</td>
+        </tr>`;
     }
-    html += '<\/tbody><\/table>';
+    html += '</tbody></table>';
     centerPanel.innerHTML = html;
     document.getElementById('attrInfo').textContent = `Количество атрибутов: ${appState.numericN !== null ? appState.numericN : '?'}`;
 }
@@ -442,16 +439,15 @@ function renderClosureTable() {
         rightPanel.innerHTML = '<div class="placeholder">Нет результатов. Нажмите «Рассчитать».</div>';
         return;
     }
-    // Выводим результат в канонической форме
     let html = '<table class="fds-table">';
     html += '<tbody>';
     for (let i = 0; i < appState.closureCform.length; i++) {
         html += `<tr>
-            <td class="fd-number">${i + 1}<\/td>
-            <td class="fd-tm">${escapeHtml(appState.closureCform[i])}<\/td>
-        <\/tr>`;
+            <td class="fd-number">${i + 1}</td>
+            <td class="fd-tm">${escapeHtml(appState.closureCform[i])}</td>
+        </tr>`;
     }
-    html += '<\/tbody><\/table>';
+    html += '</tbody></table>';
     rightPanel.innerHTML = html;
 }
 
@@ -538,14 +534,12 @@ function checkData() {
         return;
     }
     
-    // Преобразуем в каноническую форму для внутреннего использования
     const canonicalFds = expandToCanonical(appState.originalFds);
     if (canonicalFds.length === 0) {
         alert("Не удалось преобразовать ФЗ в каноническую форму.");
         return;
     }
     
-    // Собираем уникальные атрибуты из канонической формы
     const uniqueAttrs = getUniqueAttributes(canonicalFds);
     if (uniqueAttrs.length === 0) {
         alert("Не удалось определить атрибуты. Проверьте правильность введённых ФЗ.");
@@ -602,7 +596,6 @@ function calculate() {
                 if (tmStr) closureNumeric.push(tmStr);
             }
             appState.closureResult = closureNumeric;
-            // Результат в канонической форме
             appState.closureCform = closureNumeric.map(num => numericToCform(num, appState.attrMapReverse)).filter(c => c);
             appState.resultSaved = false;
             renderClosureTable();
@@ -713,8 +706,11 @@ async function saveAsFile() {
 }
 
 // ============================================================
-// СПРАВКА (МОДАЛЬНОЕ ОКНО)
+// СПРАВКА (МОДАЛЬНОЕ ОКНО С ПАГИНАЦИЕЙ)
 // ============================================================
+
+let helpPages = [];
+let currentHelpPage = 0;
 
 async function loadHelp() {
     const helpModal = document.getElementById('helpModal');
@@ -729,15 +725,71 @@ async function loadHelp() {
             throw new Error('Файл справки не найден');
         }
         const markdown = await response.text();
-        if (typeof marked !== 'undefined') {
-            helpContent.innerHTML = marked.parse(markdown);
-        } else {
-            helpContent.innerHTML = `<pre>${escapeHtml(markdown)}</pre>`;
+        const html = marked.parse(markdown);
+        
+        // Разбиваем по заголовкам второго уровня (<h2>)
+        const pages = [];
+        const sections = html.split(/(<h2>.*?<\/h2>)/);
+        let currentPage = '';
+        let pageTitle = 'Введение';
+        
+        for (let i = 0; i < sections.length; i++) {
+            const section = sections[i];
+            if (section.startsWith('<h2>')) {
+                if (currentPage.trim()) {
+                    pages.push({ title: pageTitle, content: currentPage });
+                }
+                pageTitle = section.replace(/<\/?h2>/g, '').trim();
+                currentPage = section;
+            } else {
+                currentPage += section;
+            }
         }
+        if (currentPage.trim()) {
+            pages.push({ title: pageTitle, content: currentPage });
+        }
+        
+        if (pages.length === 0) {
+            pages.push({ title: 'Справка', content: html });
+        }
+        
+        helpPages = pages;
+        currentHelpPage = 0;
+        renderHelpPage();
+        
     } catch (err) {
         helpContent.innerHTML = `<p style="color: red;">Ошибка загрузки справки: ${err.message}</p>
         <p>Убедитесь, что файл README.md находится в той же папке, что и index.html.</p>`;
     }
+}
+
+function renderHelpPage() {
+    const helpContent = document.getElementById('helpContent');
+    const page = helpPages[currentHelpPage];
+    
+    let html = `<div style="margin-bottom: 12px; font-size: 18px; font-weight: bold; color: #1a1a2e;">${page.title}</div>`;
+    html += `<div style="line-height: 1.7;">${page.content}</div>`;
+    
+    html += `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">`;
+    html += `<button id="helpPrev" class="help-nav-btn" ${currentHelpPage === 0 ? 'disabled' : ''}>◀ Предыдущая</button>`;
+    html += `<span style="font-size: 13px; color: #6c757d;">Страница ${currentHelpPage + 1} из ${helpPages.length}</span>`;
+    html += `<button id="helpNext" class="help-nav-btn" ${currentHelpPage === helpPages.length - 1 ? 'disabled' : ''}>Следующая ▶</button>`;
+    html += `</div>`;
+    
+    helpContent.innerHTML = html;
+    
+    document.getElementById('helpPrev')?.addEventListener('click', () => {
+        if (currentHelpPage > 0) {
+            currentHelpPage--;
+            renderHelpPage();
+        }
+    });
+    document.getElementById('helpNext')?.addEventListener('click', () => {
+        if (currentHelpPage < helpPages.length - 1) {
+            currentHelpPage++;
+            renderHelpPage();
+        }
+    });
 }
 
 function closeHelpModal() {
