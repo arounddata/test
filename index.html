@@ -59,10 +59,17 @@
 
     <!-- Модальное окно для справки -->
     <div id="helpModal" class="modal" style="display: none;">
-        <div class="modal-content">
+        <div class="modal-content help-modal-content">
             <span class="close-modal">&times;</span>
             <h2>📖 Справка</h2>
-            <div id="helpContent"></div>
+            <div class="help-container">
+                <div class="help-toc" id="helpToc">
+                    <!-- Оглавление будет построено динамически -->
+                </div>
+                <div class="help-page" id="helpContent">
+                    <!-- Содержимое текущей страницы -->
+                </div>
+            </div>
         </div>
     </div>
 

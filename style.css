@@ -269,50 +269,91 @@ body {
     color: #333;
 }
 
-#helpContent {
-    margin-top: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
+/* Справка — двухпанельная */
+.help-modal-content {
+    max-width: 1000px !important;
+    width: 95% !important;
+    max-height: 90% !important;
 }
 
-#helpContent h1, #helpContent h2, #helpContent h3 {
+.help-container {
+    display: flex;
+    gap: 20px;
+    height: 70vh;
+    min-height: 400px;
+    margin-top: 10px;
+}
+
+/* Левая панель — оглавление */
+.help-toc {
+    width: 250px;
+    min-width: 200px;
+    overflow-y: auto;
+    border-right: 1px solid #e9ecef;
+    padding-right: 16px;
+    flex-shrink: 0;
+}
+
+.help-toc-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #1a1a2e;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+}
+
+.help-toc-item:hover {
+    background: #f0f2f5;
+}
+
+.help-toc-item.active {
+    background: #e9ecef;
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* Правая панель — содержимое */
+.help-page {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    line-height: 1.7;
+}
+
+.help-page h1, .help-page h2, .help-page h3 {
     color: #1a1a2e;
     margin-top: 16px;
     margin-bottom: 8px;
 }
 
-#helpContent code {
+.help-page code {
     background: #f0f2f5;
     padding: 2px 6px;
     border-radius: 4px;
     font-family: monospace;
 }
 
-#helpContent pre {
+.help-page pre {
     background: #f0f2f5;
     padding: 12px;
     border-radius: 8px;
     overflow-x: auto;
 }
 
-/* Кнопки навигации в справке */
-.help-nav-btn {
-    padding: 8px 20px;
-    font-size: 14px;
-    font-weight: 500;
+.help-page table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+}
+
+.help-page th, .help-page td {
+    border: 1px solid #dee2e6;
+    padding: 6px 10px;
+    text-align: left;
+}
+
+.help-page th {
     background: #f0f2f5;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.help-nav-btn:hover:not(:disabled) {
-    background: #e9ecef;
-    border-color: #adb5bd;
-}
-
-.help-nav-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
 }

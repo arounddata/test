@@ -1,10 +1,10 @@
 // script.js
 /**
  * KIMPL1 - Вычисление замыкания системы функциональных зависимостей
- * Версия 11.18 (многостраничная справка с пагинацией по ##)
+ * Версия 11.19 (двухпанельная справка с оглавлением)
  */
 
-const APP_VERSION = "11.18";
+const APP_VERSION = "11.19";
 
 // ============================================================
 // Хранилище данных
@@ -706,18 +706,20 @@ async function saveAsFile() {
 }
 
 // ============================================================
-// СПРАВКА (МОДАЛЬНОЕ ОКНО С ПАГИНАЦИЕЙ)
+// СПРАВКА (ДВУХПАНЕЛЬНАЯ С ОГЛАВЛЕНИЕМ)
 // ============================================================
 
 let helpPages = [];
-let currentHelpPage = 0;
+let currentHelpPageIndex = 0;
 
 async function loadHelp() {
     const helpModal = document.getElementById('helpModal');
     const helpContent = document.getElementById('helpContent');
+    const helpToc = document.getElementById('helpToc');
     
     helpModal.style.display = 'flex';
     helpContent.innerHTML = '<p>Загрузка справки...</p>';
+    helpToc.innerHTML = '';
     
     try {
         const response = await fetch('README.md');
@@ -754,7 +756,8 @@ async function loadHelp() {
         }
         
         helpPages = pages;
-        currentHelpPage = 0;
+        currentHelpPageIndex = 0;
+        renderHelpToc();
         renderHelpPage();
         
     } catch (err) {
@@ -763,33 +766,32 @@ async function loadHelp() {
     }
 }
 
+function renderHelpToc() {
+    const helpToc = document.getElementById('helpToc');
+    let html = '<div style="font-weight: 600; color: #6c757d; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Содержание</div>';
+    for (let i = 0; i < helpPages.length; i++) {
+        const active = i === currentHelpPageIndex ? 'active' : '';
+        html += `<div class="help-toc-item ${active}" data-page="${i}">${helpPages[i].title}</div>`;
+    }
+    helpToc.innerHTML = html;
+    
+    document.querySelectorAll('.help-toc-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const index = parseInt(item.dataset.page);
+            if (index !== currentHelpPageIndex) {
+                currentHelpPageIndex = index;
+                renderHelpToc();
+                renderHelpPage();
+            }
+        });
+    });
+}
+
 function renderHelpPage() {
     const helpContent = document.getElementById('helpContent');
-    const page = helpPages[currentHelpPage];
-    
-    let html = `<div style="margin-bottom: 12px; font-size: 18px; font-weight: bold; color: #1a1a2e;">${page.title}</div>`;
-    html += `<div style="line-height: 1.7;">${page.content}</div>`;
-    
-    html += `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">`;
-    html += `<button id="helpPrev" class="help-nav-btn" ${currentHelpPage === 0 ? 'disabled' : ''}>◀ Предыдущая</button>`;
-    html += `<span style="font-size: 13px; color: #6c757d;">Страница ${currentHelpPage + 1} из ${helpPages.length}</span>`;
-    html += `<button id="helpNext" class="help-nav-btn" ${currentHelpPage === helpPages.length - 1 ? 'disabled' : ''}>Следующая ▶</button>`;
-    html += `</div>`;
-    
-    helpContent.innerHTML = html;
-    
-    document.getElementById('helpPrev')?.addEventListener('click', () => {
-        if (currentHelpPage > 0) {
-            currentHelpPage--;
-            renderHelpPage();
-        }
-    });
-    document.getElementById('helpNext')?.addEventListener('click', () => {
-        if (currentHelpPage < helpPages.length - 1) {
-            currentHelpPage++;
-            renderHelpPage();
-        }
-    });
+    const page = helpPages[currentHelpPageIndex];
+    helpContent.innerHTML = page.content;
+    helpContent.scrollTop = 0;
 }
 
 function closeHelpModal() {
